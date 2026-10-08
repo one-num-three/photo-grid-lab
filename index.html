@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f7f2">
+  <meta name="description" content="An Apple Photos-inspired pinch-to-zoom grid, handcrafted with HTML, Canvas and JavaScript. Try it live, watch the film, and explore the source.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Photo Grid Lab — One gesture. A whole library.">
+  <meta property="og:description" content="A small interaction study in continuous zoom, anchored motion and dense photo grids. Open source. Try it in your browser.">
+  <meta property="og:image" content="https://one-num-three.github.io/photo-grid-lab/assets/og-image.png">
+  <meta property="og:url" content="https://one-num-three.github.io/photo-grid-lab/">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="canonical" href="https://one-num-three.github.io/photo-grid-lab/">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+  <title>Photo Grid Lab — One gesture. A whole library.</title>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
+  <header class="site-header container">
+    <a class="brand" href="#" aria-label="Photo Grid Lab home">
+      <svg class="brand-mark" width="31" height="31" viewBox="0 0 32 32" aria-hidden="true"><g fill="currentColor"><rect x="1" y="1" width="8" height="8" rx="2"/><rect x="12" y="1" width="8" height="8" rx="2" opacity=".55"/><rect x="23" y="1" width="8" height="8" rx="2" opacity=".25"/><rect x="1" y="12" width="8" height="8" rx="2" opacity=".55"/><rect x="12" y="12" width="19" height="19" rx="5"/><rect x="1" y="23" width="8" height="8" rx="2" opacity=".25"/></g></svg>
+      <span>Photo Grid Lab<span class="brand-sub" data-i18n="brandSub">A study in motion</span></span>
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="#playground" data-i18n="navTry">Playground</a>
+      <a href="#film" data-i18n="navFilm">The film</a>
+      <a href="#design" data-i18n="navDesign">Design</a>
+    </nav>
+    <div class="header-actions">
+      <button class="language-button" id="language" aria-label="切换到中文">中文</button>
+      <a class="github-link" href="https://github.com/one-num-three/photo-grid-lab" target="_blank" rel="noopener noreferrer"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m12 3 2.8 5.7 6.3.9-4.5 4.4 1.1 6.2L12 17.3l-5.7 2.9 1.1-6.2L2.9 9.6l6.3-.9Z"/></svg><span data-i18n="star">Star on GitHub</span><span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero container" id="playground" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow"><span class="status-dot"></span><span data-i18n="heroEyebrow">HANDCRAFTED INTERACTION / 01</span></p>
+        <h1 id="hero-title"><span data-i18n="heroLine1">One gesture.</span><br><span class="accent" data-i18n="heroLine2">A whole library.</span></h1>
+        <p class="hero-description" data-i18n="heroDescription">From one photograph to hundreds of little memories. A tactile, Apple Photos-inspired grid that follows your fingers.</p>
+        <div class="hero-actions">
+          <button class="button button-blue" id="play-demo"><svg width="17" height="17" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6 3.5v13L16 10Z"/></svg><span data-i18n="playDemo">Play the interaction</span></button>
+          <a class="button button-quiet" href="demo/index.html?lang=en" id="fullscreen-demo" target="_blank" rel="noopener noreferrer"><span data-i18n="openDemo">Open playground</span><span aria-hidden="true">↗</span></a>
+        </div>
+        <p class="hero-note" data-i18n="heroNote">This is live. Pinch, scroll, or use the controls.</p>
+        <div class="density-note"><div class="density-symbols" aria-hidden="true"><span class="one"></span><span class="three"></span><span class="five"></span></div><span data-i18n="densityCaption">1 → 3 → 5 → 9 → 13 columns.<br>One continuous gesture.</span></div>
+        <div class="hero-meta"><span data-i18n="metaVanilla">Vanilla JavaScript</span><span>Canvas 2D</span><span data-i18n="metaOpen">Open source</span></div>
+      </div>
+      <div class="hero-preview">
+        <div class="preview-topline"><span class="preview-label" data-i18n="previewLabel">LIVE PLAYGROUND</span><span class="preview-live"><i></i><span data-i18n="previewLive">Interactive</span></span></div>
+        <div class="demo-shell"><iframe id="demo-frame" src="demo/index.html?lang=en&amp;embed=1" title="Interactive photo grid" allow="fullscreen" loading="eager"></iframe></div>
+        <div class="preview-caption"><span data-i18n="previewHint">Ctrl + scroll to zoom</span><span data-i18n="previewCount">864 mock photos</span></div>
+      </div>
+    </section>
+
+    <section class="details-band" aria-label="Interaction details">
+      <div class="container details-grid">
+        <article><span class="detail-number">01</span><div><h2 data-i18n="detail1Title">Follow the photograph.</h2><p data-i18n="detail1Text">Your focal photo stays in view as the layout changes around it.</p></div></article>
+        <article><span class="detail-number">02</span><div><h2 data-i18n="detail2Title">Keep the grid together.</h2><p data-i18n="detail2Text">Tight mosaics crossfade between densities, with no scattered tiles.</p></div></article>
+        <article><span class="detail-number">03</span><div><h2 data-i18n="detail3Title">Let motion settle.</h2><p data-i18n="detail3Text">Gentle snapping, inertial scrolling, and a little give at the edges.</p></div></article>
+      </div>
+    </section>
+
+    <section class="film-section container section-space" id="film" aria-labelledby="film-title">
+      <div class="section-heading"><div><p class="eyebrow" data-i18n="filmEyebrow">THE INTERACTION, IN MOTION</p><h2 id="film-title" data-i18n="filmTitle">A little film.<br>A lot of tiny details.</h2></div><p class="section-intro" data-i18n="filmIntro">A real browser recording of the working demo. Watch the grid expand, tighten, and find its rhythm.</p></div>
+      <div class="film-stage">
+        <div class="film-copy"><span class="film-badge" data-i18n="filmBadge">DEMO / MP4</span><h3 data-i18n="filmSubTitle">Big picture.<br>Small moments.</h3><p data-i18n="filmText">Watch one photo stay in focus while the library transforms around it.</p><ul class="film-chapters"><li><span>01</span><span data-i18n="chapter1">Continuous density changes</span></li><li><span>02</span><span data-i18n="chapter2">A photograph as the anchor</span></li><li><span>03</span><span data-i18n="chapter3">Scroll, settle, and repeat</span></li></ul><a class="text-link" href="media/photo-grid-demo.mp4" download="photo-grid-demo.mp4"><span data-i18n="downloadVideo">Download the video</span><span aria-hidden="true">↓</span></a></div>
+        <div class="film-player"><video id="demo-video" controls playsinline preload="metadata" poster="assets/video-poster.webp" aria-label="Photo grid interaction demo"><source src="media/photo-grid-demo-web.mp4" type="video/mp4"><span data-i18n="videoFallback">Your browser does not support embedded video.</span></video></div>
+      </div>
+      <p class="film-footnote" data-i18n="filmFootnote">Screen recording of mock data. No private photo library is accessed.</p>
+    </section>
+
+    <section class="design-section section-space" id="design" aria-labelledby="design-title">
+      <div class="container">
+        <div class="section-heading"><div><p class="eyebrow" data-i18n="designEyebrow">WHERE THE IDEA STARTED</p><h2 id="design-title" data-i18n="designTitle">An album, first.<br>A camera, second.</h2></div><p class="section-intro" data-i18n="designIntro">The grid grew out of an album-first camera concept: choose where a photo belongs before you take it. These are visual concepts from that earlier study.</p></div>
+        <div class="design-gallery">
+          <figure><button class="design-image" data-image="assets/album-home.webp" data-caption-key="designHome" aria-label="Enlarge album home concept"><img src="assets/album-home.webp" width="720" height="1560" loading="lazy" alt="Warm white album camera home concept with layered album cards"></button><figcaption><span>01</span><span data-i18n="designHome">The album-first home</span><span class="concept-label" data-i18n="concept">CONCEPT</span></figcaption></figure>
+          <figure><button class="design-image" data-image="assets/album-create.webp" data-caption-key="designCreate" aria-label="Enlarge new album concept"><img src="assets/album-create.webp" width="720" height="1560" loading="lazy" alt="New album visual concept with simple name and cover controls"></button><figcaption><span>02</span><span data-i18n="designCreate">A place for the next photo</span><span class="concept-label" data-i18n="concept">CONCEPT</span></figcaption></figure>
+          <figure><button class="design-image" data-image="assets/album-settings.webp" data-caption-key="designSettings" aria-label="Enlarge settings concept"><img src="assets/album-settings.webp" width="720" height="1560" loading="lazy" alt="Settings visual concept in a restrained warm white glass style"></button><figcaption><span>03</span><span data-i18n="designSettings">Quiet, useful settings</span><span class="concept-label" data-i18n="concept">CONCEPT</span></figcaption></figure>
+        </div>
+        <p class="design-footnote" data-i18n="designFootnote">Visual studies, not implemented app screens. The working prototype above focuses on the photo grid.</p>
+      </div>
+    </section>
+
+    <section class="source-section container section-space" id="source" aria-labelledby="source-title">
+      <div class="source-copy"><p class="eyebrow" data-i18n="sourceEyebrow">SMALL PROJECT. OPEN SOURCE.</p><h2 id="source-title" data-i18n="sourceTitle">Take it apart.<br>Make it your own.</h2><p data-i18n="sourceText">No framework. No backend. Just a photo grid, a handful of carefully tuned interactions, and the source to explore them.</p><a class="button button-dark" href="https://github.com/one-num-three/photo-grid-lab" target="_blank" rel="noopener noreferrer"><span data-i18n="sourceButton">Explore on GitHub</span><span aria-hidden="true">↗</span></a><p class="source-note" data-i18n="sourceNote">If the interaction sparks an idea, a star helps others discover it.</p></div>
+      <div class="code-card"><div class="code-top"><span class="code-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>interaction.js</span><span>JS</span></div><pre><code><span class="code-comment">// One photo. Five perspectives.</span>
+<span class="code-purple">const</span> levels = [<span class="code-blue">1, 3, 5, 9, 13</span>];
+
+<span class="code-comment">// Keep the moment under your fingers.</span>
+anchor = {
+  index: photograph,
+  u: positionInsidePhoto.x,
+  v: positionInsidePhoto.y
+};
+
+<span class="code-comment">// Zoom continuously. Settle gently.</span>
+applyZoom(nextValue, gestureCenter);
+settle();</code></pre><div class="code-bottom"><span data-i18n="codeNote">Conceptual excerpt · full implementation in the repository</span><span class="code-dot"></span></div></div>
+    </section>
+  </main>
+
+  <footer class="container site-footer"><div><a class="footer-brand" href="#">Photo Grid Lab</a><p data-i18n="footerDescription">A small study in making motion feel right.</p></div><div class="footer-links"><a href="https://github.com/one-num-three/photo-grid-lab/blob/main/README.md" target="_blank" rel="noopener noreferrer">README · EN</a><a href="https://github.com/one-num-three/photo-grid-lab/blob/main/README.zh-CN.md" target="_blank" rel="noopener noreferrer">README · 中文</a><a href="demo/index.html?lang=en" id="footer-demo" data-i18n="footerDemo">Standalone demo ↗</a></div><div class="footer-bottom"><span data-i18n="footerLicense">Code under MIT · Demo photos from Unsplash</span><span data-i18n="footerDisclaimer">Independent study. Not affiliated with Apple.</span></div></footer>
+
+  <dialog id="image-dialog" aria-labelledby="dialog-title"><div class="dialog-top"><h2 id="dialog-title"></h2><button id="close-dialog" aria-label="Close image preview"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div><img id="dialog-image" src="assets/album-home.webp" alt=""></dialog>
+  <div class="toast" id="toast" role="status"></div>
+</body>
+</html>

@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>照片 · 捏合缩放网格</title>
+<style>
+  :root{--paper:#f8f7f4;--ink:#17191e;--muted:#88898e;--blue:#1677ff;--glass:rgba(255,255,255,.78)}
+  *{box-sizing:border-box}html,body{margin:0;min-height:100%;overscroll-behavior:none}
+  body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:#eeedea;color:var(--ink);height:100dvh;overflow:hidden;-webkit-font-smoothing:antialiased}
+  button,input{-webkit-tap-highlight-color:transparent;font:inherit}button{cursor:pointer}
+  button:focus-visible,input:focus-visible,.viewport:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
+  .showcase{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 16px 14px;gap:13px}
+  .app{width:min(100%,440px);height:min(908px,calc(100dvh - 74px));position:relative;overflow:hidden;background:var(--paper);border-radius:26px;box-shadow:0 16px 55px #26272410,0 1px 0 #ffffffb3;isolation:isolate}
+  .status{height:43px;display:flex;justify-content:space-between;align-items:center;padding:10px 27px 0;font-size:15px;font-weight:600;letter-spacing:-.3px;pointer-events:none}
+  .status-icons{display:flex;align-items:center;gap:6px}.status svg{display:block}
+  .header{height:106px;padding:14px 22px 17px;display:flex;align-items:flex-start;justify-content:space-between;position:relative;z-index:4}
+  h1{font-size:34px;line-height:1.16;letter-spacing:-1.3px;font-weight:600;margin:0 0 6px}
+  .summary{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:13px;letter-spacing:.05px}
+  .summary .separator{width:2px;height:2px;border-radius:50%;background:#aaa}
+  .demo{display:flex;align-items:center;gap:6px;margin-top:7px;padding:11px 14px;border:1px solid #fff;border-radius:25px;background:rgba(255,255,255,.72);box-shadow:0 3px 12px #22242d06;color:var(--ink);font-size:13px;font-weight:500;transition:background .18s,transform .18s}
+  .demo:hover{background:#fff}.demo:active{transform:scale(.96)}.demo.is-playing{color:var(--blue)}
+  .viewport{position:absolute;inset:149px 0 0;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+  .viewport.is-dragging{cursor:grabbing}.viewport.is-zooming{cursor:zoom-in}
+  canvas{display:block;width:100%;height:100%;touch-action:none}
+  .date-hud{position:absolute;top:13px;left:16px;z-index:3;pointer-events:none;padding:8px 13px 9px;border-radius:20px;background:rgba(255,255,255,.84);backdrop-filter:blur(24px) saturate(1.25);-webkit-backdrop-filter:blur(24px) saturate(1.25);border:1px solid #ffffffb8;box-shadow:0 3px 16px #11111108;font-size:13px;font-weight:600;letter-spacing:-.2px;transition:opacity .2s,transform .3s}
+  .date-hud.is-hidden{opacity:0;transform:translateY(-5px)}
+  .bottom-shade{position:absolute;inset:auto 0 0;height:124px;pointer-events:none;background:linear-gradient(transparent,rgba(248,247,244,.2) 35%,rgba(248,247,244,.85));z-index:4}
+  .zoom-dock{position:absolute;z-index:6;bottom:34px;left:50%;transform:translateX(-50%);width:246px;height:52px;border-radius:29px;display:flex;align-items:center;padding:5px 6px;gap:8px;border:1px solid rgba(255,255,255,.9);background:rgba(255,255,255,.82);backdrop-filter:blur(28px) saturate(1.25);-webkit-backdrop-filter:blur(28px) saturate(1.25);box-shadow:0 6px 20px #22272d13,inset 0 1px 1px #fff}
+  .zoom-dock button{border:0;background:transparent;width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;color:#33363c;transition:background .18s,color .18s,opacity .18s}
+  .zoom-dock button:hover{background:#edf3fe;color:var(--blue)}.zoom-dock button:disabled{opacity:.27;cursor:default}
+  .slider-wrap{position:relative;flex:1;height:40px;display:flex;align-items:center}
+  .slider-track{position:absolute;left:0;right:0;height:3px;border-radius:4px;background:#d6d9df;pointer-events:none}
+  .slider-fill{height:100%;background:#646c77;border-radius:4px;width:75%}
+  .slider-ticks{position:absolute;left:3px;right:3px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}.slider-ticks i{height:5px;width:1px;border-radius:2px;background:#878d96;opacity:.5}
+  input[type=range]{position:relative;z-index:1;width:100%;margin:0;height:40px;background:transparent;appearance:none;-webkit-appearance:none;cursor:ew-resize;touch-action:none}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:transparent}
+  input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:24px;height:24px;border:1px solid #fff;background:#fff;box-shadow:0 1px 5px #1114,0 2px 7px #3331;border-radius:50%;margin-top:-10.5px}
+  input[type=range]::-moz-range-track{height:3px;background:transparent}input[type=range]::-moz-range-thumb{width:23px;height:23px;border:1px solid #fff;background:#fff;box-shadow:0 1px 5px #1114;border-radius:50%}
+  .gesture-hint{position:absolute;z-index:5;bottom:98px;left:50%;transform:translateX(-50%);white-space:nowrap;border-radius:18px;padding:7px 12px;background:rgba(255,255,255,.76);backdrop-filter:blur(15px);font-size:11px;color:#62656c;pointer-events:none;transition:opacity .45s,transform .45s}
+  .gesture-hint.is-hidden{opacity:0;transform:translate(-50%,5px)}
+  .home{position:absolute;z-index:7;bottom:11px;left:50%;transform:translateX(-50%);height:5px;width:124px;background:#16181b;border-radius:10px;pointer-events:none}
+  .loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;background:var(--paper);font-size:13px;color:#86898e;z-index:8;transition:opacity .25s;pointer-events:none}.loading.is-ready{opacity:0}.spinner{width:14px;height:14px;border-radius:50%;border:1.5px solid #ddd;border-top-color:#777;animation:turn .9s linear infinite}@keyframes turn{to{transform:rotate(360deg)}}
+  .desktop-note{font-size:11px;color:#858580;letter-spacing:.08px;line-height:1.8;text-align:center}.desktop-note kbd{font:inherit;color:#646560;padding:1px 4px;border:1px solid #d6d7d1;border-radius:4px;background:#f5f5f1}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  @media(max-width:600px){body{background:var(--paper)}.showcase{padding:0;gap:0}.app{width:100%;height:100dvh;max-height:none;border-radius:0;box-shadow:none}.desktop-note{display:none}.zoom-dock{bottom:max(34px,calc(env(safe-area-inset-bottom) + 17px))}.home{bottom:max(11px,env(safe-area-inset-bottom))}.gesture-hint{bottom:max(98px,calc(env(safe-area-inset-bottom) + 81px))}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<main class="showcase">
+  <section class="app" aria-label="照片图库缩放演示">
+    <div class="status" aria-hidden="true"><span>9:41</span><div class="status-icons">
+      <svg width="18" height="12" viewBox="0 0 18 12"><g fill="currentColor"><rect x="0" y="8" width="3" height="4" rx=".8"/><rect x="5" y="5" width="3" height="7" rx=".8"/><rect x="10" y="2" width="3" height="10" rx=".8"/><rect x="15" width="3" height="12" rx=".8"/></g></svg>
+      <svg width="16" height="12" viewBox="0 0 20 15"><path d="M1.3 4.3a13 13 0 0 1 17.4 0M4.6 7.7a8.1 8.1 0 0 1 10.8 0M8.1 11.1a2.9 2.9 0 0 1 3.8 0" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>
+      <svg width="25" height="12" viewBox="0 0 28 14"><rect x=".7" y=".7" width="23" height="12.6" rx="3" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="1.2"/><rect x="3" y="3" width="18.3" height="8" rx="1.4" fill="currentColor"/><path d="M25 4.5v5a2.5 2.5 0 0 0 0-5" fill="currentColor" opacity=".5"/></svg>
+    </div></div>
+    <header class="header"><div><h1>照片</h1><div class="summary"><span>864 张照片</span><i class="separator"></i><span id="density-label">每行 3 张</span></div></div>
+      <button class="demo" id="demo" aria-label="播放照片网格缩放演示"><svg id="play-icon" width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4.5 2.3a1 1 0 0 1 1.5-.86l8 5.7a1 1 0 0 1 0 1.72l-8 5.7a1 1 0 0 1-1.5-.86z"/></svg><span id="demo-text">演示</span></button>
+    </header>
+    <div class="viewport" id="viewport" tabindex="0" aria-label="照片网格。双指捏合缩放，单指拖动浏览；键盘加减键缩放，方向键滚动。">
+      <canvas id="gallery" role="img" aria-label="864 张模拟照片组成的可缩放网格"></canvas>
+      <div class="date-hud" id="date">2026年10月8日</div>
+      <div class="loading" id="loading"><span class="spinner"></span><span>正在准备照片</span></div>
+    </div>
+    <div class="bottom-shade"></div>
+    <div class="gesture-hint" id="gesture-hint">双指捏合，照片跟着手指变大、变小</div>
+    <div class="zoom-dock" role="group" aria-label="调整照片网格密度">
+      <button id="zoom-out" aria-label="缩小照片，显示更多列"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+      <div class="slider-wrap"><div class="slider-track"><div class="slider-fill" id="slider-fill"></div></div><div class="slider-ticks"><i></i><i></i><i></i><i></i><i></i></div><input type="range" id="zoom-range" min="0" max="4" step=".001" value="3" aria-label="照片大小" aria-valuetext="每行3张照片"></div>
+      <button id="zoom-in" aria-label="放大照片，显示更少列"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg></button>
+    </div>
+    <div class="home" aria-hidden="true"></div>
+    <div id="announcement" class="sr-only" aria-live="polite"></div>
+  </section>
+  <div class="desktop-note">触控板捏合，或 <kbd>Ctrl</kbd> + 滚轮缩放 · 拖动照片可上下浏览 · 点「演示」看完整变化</div>
+</main>
+<script>
+(() => {
+  'use strict';
+  const PHOTO_DATA = __PHOTO_DATA__;
+  const lang = new URLSearchParams(location.search).get('lang') === 'zh' ? 'zh' : 'en';
+  const tx = lang === 'zh' ? {
+    title:'照片 · 捏合缩放网格', heading:'照片', count:'864 张照片', play:'演示', stop:'停止',
+    density:c=>`每行 ${c} 张`, densityAria:c=>`每行${c}张照片`, hint:'双指捏合，照片跟着手指变大、变小',
+    loading:'正在准备照片', announce:c=>`现在每行显示${c}张照片`,
+    date:new Intl.DateTimeFormat('zh-CN',{year:'numeric',month:'long',day:'numeric'}),
+    viewport:'照片网格。双指捏合缩放，单指拖动浏览；键盘加减键缩放，方向键滚动。',
+    zoomOut:'缩小照片，显示更多列',zoomIn:'放大照片，显示更少列',size:'照片大小',
+    demo:'播放照片网格缩放演示',dock:'调整照片网格密度',canvas:'864 张模拟照片组成的可缩放网格',
+    help:'双指捏合，或 Ctrl + 滚轮缩放 · 拖动照片可上下浏览 · 点「演示」看完整变化'
+  } : {
+    title:'Photos · Pinch-to-zoom grid', heading:'Photos', count:'864 photos', play:'Demo', stop:'Stop',
+    density:c=>`${c} per row`, densityAria:c=>`${c} photos per row`, hint:'Pinch to bring your photos closer',
+    loading:'Preparing your photos', announce:c=>`Now showing ${c} photos per row`,
+    date:new Intl.DateTimeFormat('en-US',{year:'numeric',month:'short',day:'numeric'}),
+    viewport:'Photo grid. Pinch to zoom, drag to scroll. Plus and minus keys zoom; arrows scroll.',
+    zoomOut:'Smaller photos, more columns',zoomIn:'Larger photos, fewer columns',size:'Photo size',
+    demo:'Play photo grid zoom demonstration',dock:'Adjust photo grid density',canvas:'Zoomable grid of 864 mock photos',
+    help:'Pinch, or Ctrl + scroll to zoom · Drag to browse · Click Demo to see the transition'
+  };
+  document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
+  document.title=tx.title;
+  document.querySelector('h1').textContent=tx.heading;
+  document.querySelector('.summary span').textContent=tx.count;
+  document.getElementById('density-label').textContent=tx.density(3);
+  document.getElementById('demo-text').textContent=tx.play;
+  document.getElementById('gesture-hint').textContent=tx.hint;
+  document.querySelector('#loading span:last-child').textContent=tx.loading;
+  document.querySelector('.desktop-note').textContent=tx.help;
+  for(const [id,label] of [['viewport',tx.viewport],['zoom-out',tx.zoomOut],['zoom-in',tx.zoomIn],['zoom-range',tx.size],['demo',tx.demo],['gallery',tx.canvas]])document.getElementById(id).setAttribute('aria-label',label);
+  document.querySelector('.zoom-dock').setAttribute('aria-label',tx.dock);
+  document.querySelector('.app').setAttribute('aria-label',tx.title);
+  document.getElementById('zoom-range').setAttribute('aria-valuetext',tx.densityAria(3));
+  const viewport = document.getElementById('viewport');
+  const canvas = document.getElementById('gallery');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  const range = document.getElementById('zoom-range');
+  const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+  const levels = [1, 3, 5, 9, 13];
+  const COUNT = 864;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const mix = (a, b, t) => a + (b - a) * t;
+  const mod = (a, b) => ((a % b) + b) % b;
+  let W = 440, H = 700, dpr = 1, ready = false;
+  let z = 1, scroll = 0, panX = 0;
+  let pads = [0, 0, 0, 0, 0], images = [], photos = [], prefix = [0];
+  let anchor = null, zoomSession = null, animation = null, fling = null;
+  let needsDraw = true, raf = 0, wheelTimer = 0;
+  let demoToken = 0, demoPlaying = false;
+  let pointers = new Map(), drag = null, pinch = null, lastRects = [];
+  let lastInteraction = 0, performanceFrames = [], lastFrame = 0;
+  let announcedLevel = 1, frameCount = 0;
+  const selection = { index: null, time: 0 };
+
+  const gapFor = c => c >= 9 ? 1 : 1.7;
+  function layout(i, level) {
+    const c = levels[level], gap = gapFor(c);
+    if (c === 1) return { x: 0, y: W * prefix[i] + gap * i, w: W, h: W * photos[i].ratio };
+    const pitch = (W + gap) / c, size = pitch - gap, j = i + pads[level];
+    return { x: mod(j,c) * pitch, y: Math.floor(j/c) * pitch, w: size, h: size };
+  }
+  function geometry(i, value = z) {
+    const a = Math.floor(value), b = Math.min(a + 1, 4), t = value - a;
+    const p = layout(i,a); if (t < .0001 || a === b) return p;
+    const q = layout(i,b);
+    return { x: mix(p.x,q.x,t), y: mix(p.y,q.y,t), w: mix(p.w,q.w,t), h: mix(p.h,q.h,t) };
+  }
+  function totalHeight(value = z) {
+    const one = l => levels[l] === 1 ? W * prefix[COUNT] + gapFor(1) * (COUNT-1) : Math.ceil((COUNT + pads[l])/levels[l]) * ((W + gapFor(levels[l])) / levels[l]) - gapFor(levels[l]);
+    const a = Math.floor(value), b = Math.min(a+1,4);
+    return mix(one(a),one(b),value-a);
+  }
+  function maxScroll() { return Math.max(0,totalHeight()-H); }
+  function rubber(v,max) { return v<0 ? -Math.sqrt(-v)*5 : v>max ? max+Math.sqrt(v-max)*5 : v; }
+  function requestDraw(){ needsDraw=true; if(!raf)raf=requestAnimationFrame(tick); }
+  function lowerBound(y) {
+    let lo=0,hi=COUNT;
+    while(lo<hi){const mid=(lo+hi)>>1;if(W*prefix[mid]+gapFor(1)*mid<y)lo=mid+1;else hi=mid;}
+    return Math.max(0,lo-1);
+  }
+  function candidates() {
+    const sets=new Set();
+    for(const level of new Set([Math.floor(z),Math.ceil(z)])){
+      const c=levels[level],pitch=(W+gapFor(c))/c;
+      const start=c===1 ? lowerBound(scroll-H*.6) : Math.floor((scroll-H*.6)/pitch)*c-pads[level];
+      const end=c===1 ? lowerBound(scroll+H*1.6)+2 : Math.ceil((scroll+H*1.6)/pitch)*c-pads[level];
+      for(let i=Math.max(0,start);i<Math.min(COUNT,end);i++)sets.add(i);
+    }
+    if(anchor)sets.add(anchor.index);
+    return [...sets];
+  }
+  function paintPhoto(i, x, y, w, h, alpha = 1) {
+    const photo=photos[i],image=images[photo.source];
+    if(!image || !image.naturalWidth)return;
+    const iw=image.naturalWidth,ih=image.naturalHeight;
+    const cropRatio=w/h;let sw=iw,sh=ih;
+    if(iw/ih>cropRatio)sw=ih*cropRatio;else sh=iw/cropRatio;
+    const sx=(iw-sw)*photo.cropX,sy=(ih-sh)*photo.cropY;
+    ctx.globalAlpha=alpha;
+    ctx.drawImage(image,sx,sy,sw,sh,x,y,w,h);
+  }
+  function paintPlane(level, focusRect, alpha, collect) {
+    if(alpha<.001)return;
+    const c=levels[level],focus=layout(anchor.index,level);
+    const sx=focusRect.w/focus.w,sy=focusRect.h/focus.h;
+    if(c===1){
+      const start=lowerBound(focus.y+(-focusRect.y-H*.2)/sy);
+      const end=lowerBound(focus.y+(H-focusRect.y+H*.2)/sy)+2;
+      for(let i=start;i<Math.min(COUNT,end);i++){
+        const p=layout(i,level),x=focusRect.x+(p.x-focus.x)*sx,y=focusRect.y+(p.y-focus.y)*sy;
+        const w=p.w*sx,h=p.h*sy;if(y+h<0||y>H)continue;
+        paintPhoto(i,x,y,w,h,alpha);if(collect)lastRects.push({index:i,x,y,w,h});
+      }
+      return;
+    }
+    const pitch=(W+gapFor(c))/c,dx=pitch*sx,dy=pitch*sy;
+    const anchorRow=Math.floor((anchor.index+pads[level])/c),anchorCol=mod(anchor.index+pads[level],c);
+    const r0=anchorRow+Math.floor(-focusRect.y/dy)-1;
+    const r1=anchorRow+Math.ceil((H-focusRect.y)/dy)+1;
+    const c0=anchorCol+Math.floor(-focusRect.x/dx)-1;
+    const c1=anchorCol+Math.ceil((W-focusRect.x)/dx)+1;
+    // Each layer is a complete, tightly packed mosaic. Rows extend past the
+    // viewport during a gesture, so there are no exposed holes at the edges.
+    for(let row=r0;row<=r1;row++)for(let col=c0;col<=c1;col++){
+      const i=row*c+col-pads[level];if(i<0||i>=COUNT)continue;
+      const x=focusRect.x+(col-anchorCol)*dx,y=focusRect.y+(row-anchorRow)*dy;
+      const w=focus.w*sx,h=focus.h*sy;if(y+h<0||y>H||x+w<0||x>W)continue;
+      paintPhoto(i,x,y,w,h,alpha);if(collect)lastRects.push({index:i,x,y,w,h});
+    }
+  }
+  function draw() {
+    if(!ready)return;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.fillStyle='#f8f7f4';ctx.fillRect(0,0,W,H);
+    ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='low';
+    lastRects=[];
+    const a=Math.floor(z),b=Math.min(a+1,4),t=z-a,morphing=!!zoomSession||!!animation;
+    if(anchor&&t>.001&&t<.999){
+      const p=geometry(anchor.index),focus={x:p.x+panX,y:p.y-scroll,w:p.w,h:p.h};
+      const crossfade=t*t*(3-2*t);
+      paintPlane(b,focus,1,t>=.5);
+      paintPlane(a,focus,1-crossfade,t<.5);
+      // The focal image is shared by both layouts and remains perfectly opaque.
+      paintPhoto(anchor.index,focus.x,focus.y,focus.w,focus.h);
+      lastRects.push({index:anchor.index,...focus});
+    }else{
+      for(const i of candidates()){
+        const p=geometry(i),x=p.x+panX,y=p.y-scroll;
+        if(y+p.h<-4||y>H+4||x+p.w<-4||x>W+4)continue;
+        paintPhoto(i,x,y,p.w,p.h);
+        lastRects.push({index:i,x,y,w:p.w,h:p.h});
+      }
+    }
+    ctx.globalAlpha=1;
+    if(selection.index!==null&&performance.now()-selection.time<850){
+      const p=geometry(selection.index),life=(performance.now()-selection.time)/850;
+      ctx.strokeStyle=`rgba(255,255,255,${Math.sin((1-life)*Math.PI)*.85})`;ctx.lineWidth=2;
+      ctx.strokeRect(p.x+panX+1,p.y-scroll+1,p.w-2,p.h-2);
+      if(!animation)requestDraw();
+    }
+    const center=hitTest(W*.5,Math.min(H*.42,H-120));
+    const i=center?.index ?? lastRects[Math.floor(lastRects.length/2)]?.index ?? 0;
+    const day=new Date(Date.UTC(2026,9,8)-Math.floor(i/18)*86400000);
+    document.getElementById('date').textContent=tx.date.format(day);
+    const controlValue=4-z;
+    if(document.activeElement!==range||!zoomSession)range.value=controlValue;
+    document.getElementById('slider-fill').style.width=`${controlValue/4*100}%`;
+    const nearest=Math.round(z);
+    document.getElementById('density-label').textContent=tx.density(levels[nearest]);
+    range.setAttribute('aria-valuetext',tx.densityAria(levels[nearest]));
+    document.getElementById('zoom-out').disabled=z>=3.995;
+    document.getElementById('zoom-in').disabled=z<=.005;
+    document.getElementById('date').classList.toggle('is-hidden',morphing);
+    frameCount++;
+  }
+  function hitTest(x,y){
+    for(let j=lastRects.length-1;j>=0;j--){const p=lastRects[j];if(x>=p.x&&x<=p.x+p.w&&y>=p.y&&y<=p.y+p.h)return p;}
+    let best=null,dist=Infinity;
+    for(const p of lastRects){const d=(p.x+p.w*.5-x)**2+(p.y+p.h*.5-y)**2;if(d<dist){dist=d;best=p;}}
+    return best;
+  }
+  function stopAnimation(normalize=false){
+    if(animation){animation.resolve?.();animation=null;}fling=null;
+    if(normalize&&Math.abs(z-Math.round(z))>.00001){
+      const p=anchor?geometry(anchor.index):null;
+      const focalY=p?p.y-scroll+anchor.v*p.h:0;
+      z=Math.round(z);
+      if(anchor){const q=geometry(anchor.index);scroll=clamp(q.y+anchor.v*q.h-focalY,0,maxScroll());}
+      panX=0;zoomSession=null;viewport.classList.remove('is-zooming');requestDraw();
+    }
+  }
+  function interaction(){lastInteraction=performance.now();document.getElementById('gesture-hint').classList.add('is-hidden');}
+  function stopDemo(){if(!demoPlaying)return;demoToken++;demoPlaying=false;document.getElementById('demo').classList.remove('is-playing');document.getElementById('demo-text').textContent=tx.play;}
+  function makeAnchor(point) {
+    const hit=hitTest(point.x,point.y);
+    if(!hit)return {index:0,u:.5,v:.5,point};
+    return {index:hit.index,u:clamp((point.x-hit.x)/hit.w,0,1),v:clamp((point.y-hit.y)/hit.h,0,1),point};
+  }
+  function beginZoom(point,kind='gesture'){
+    stopAnimation();clearTimeout(wheelTimer);
+    anchor=makeAnchor(point);
+    const active=new Set([Math.floor(z),Math.ceil(z)]);
+    for(let level=0;level<5;level++){
+      if(active.has(level))continue;
+      const c=levels[level];if(c===1){pads[level]=0;continue;}
+      const pitch=(W+gapFor(c))/c,size=pitch-gapFor(c);
+      const col=clamp(Math.round((point.x-anchor.u*size)/pitch),0,c-1);
+      pads[level]=mod(col-mod(anchor.index,c),c);
+    }
+    zoomSession={start:z,kind};fling=null;interaction();viewport.classList.add('is-zooming');
+  }
+  function applyZoom(value,point=anchor?.point){
+    z=clamp(value,0,4);
+    if(anchor&&point){
+      anchor.point=point;const p=geometry(anchor.index);
+      panX=point.x-p.x-anchor.u*p.w;
+      scroll=p.y+anchor.v*p.h-point.y;
+      scroll=clamp(scroll,0,maxScroll());
+    }
+    requestDraw();
+  }
+  const ease=t=>{const k=8.2,base=1-(1+k)*Math.exp(-k);return (1-(1+k*t)*Math.exp(-k*t))/base;};
+  function animateTo(target,duration=440){
+    target=clamp(target,0,4);
+    if(!anchor)beginZoom({x:W*.5,y:H*.44},'control');
+    stopAnimation();
+    return new Promise(resolve=>{
+      const originalPan=panX;
+      animation={from:z,to:target,start:performance.now(),duration:reducedMotion.matches?1:duration,resolve,originalPan};
+      zoomSession=null;viewport.classList.remove('is-zooming');requestDraw();
+    });
+  }
+  function settle(){
+    if(!zoomSession)return;
+    animateTo(Math.round(z),380);
+  }
+  function finishZoom(){
+    zoomSession=null;panX=0;scroll=clamp(scroll,0,maxScroll());
+    if(scroll===0)pads[Math.round(z)]=0;
+    viewport.classList.remove('is-zooming');
+    const level=Math.round(z);
+    if(level!==announcedLevel){document.getElementById('announcement').textContent=tx.announce(levels[level]);announcedLevel=level;}
+    requestDraw();
+  }
+  function tick(now){
+    raf=0;const dt=clamp((now-(lastFrame||now))/1000,.001,.033);lastFrame=now;
+    if(animation){
+      const a=animation,t=clamp((now-a.start)/a.duration,0,1),p=ease(t);
+      applyZoom(mix(a.from,a.to,p));
+      panX*=1-p;
+      if(t===1){z=a.to;animation=null;finishZoom();a.resolve?.();}
+    }
+    if(fling){
+      const bounds=maxScroll();
+      const target=clamp(scroll,0,bounds);
+      if(scroll<0||scroll>bounds){const acceleration=(target-scroll)*155-fling.v*23;fling.v+=acceleration*dt;}
+      else fling.v*=Math.exp(-5.2*dt);
+      scroll+=fling.v*dt;
+      if(Math.abs(fling.v)<4&&Math.abs(scroll-target)<.5){scroll=target;fling=null;}
+      needsDraw=true;
+    }
+    if(needsDraw){needsDraw=false;const start=performance.now();draw();performanceFrames.push(performance.now()-start);if(performanceFrames.length>240)performanceFrames.shift();}
+    if(animation||fling)requestDraw();
+  }
+  function local(event){const r=viewport.getBoundingClientRect();return {x:event.clientX-r.left,y:event.clientY-r.top};}
+  function centerPoints(){const ps=[...pointers.values()];return {x:(ps[0].x+ps[1].x)/2,y:(ps[0].y+ps[1].y)/2};}
+  function distancePoints(){const ps=[...pointers.values()];return Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y);}
+  viewport.addEventListener('pointerdown',event=>{
+    if(!ready||event.button>0)return;
+    event.preventDefault();stopDemo();interaction();stopAnimation();
+    viewport.setPointerCapture(event.pointerId);
+    const point=local(event);pointers.set(event.pointerId,point);
+    if(pointers.size===2){beginZoom(centerPoints());pinch={distance:distancePoints(),z};drag=null;}
+    else if(pointers.size===1){
+      if(event.altKey){beginZoom(point,'mouse-drag');drag={alt:true,startY:point.y,startZ:z};}
+      else{drag={x:point.x,y:point.y,scroll,time:performance.now(),v:0,moved:false};viewport.classList.add('is-dragging');}
+    }
+  });
+  viewport.addEventListener('pointermove',event=>{
+    if(!pointers.has(event.pointerId))return;
+    const point=local(event);pointers.set(event.pointerId,point);const now=performance.now();
+    if(pinch&&pointers.size>=2){applyZoom(pinch.z-Math.log2(Math.max(8,distancePoints())/Math.max(8,pinch.distance))*1.35,centerPoints());}
+    else if(drag?.alt){applyZoom(drag.startZ+(point.y-drag.startY)/170);}
+    else if(drag&&!pinch){
+      const dy=drag.y-point.y,dt=Math.max(8,now-drag.time);
+      if(Math.abs(point.y-drag.y)>2||drag.moved){if(!drag.moved)stopAnimation(true);drag.moved=true;}
+      const next=scroll+dy,max=maxScroll();
+      scroll=(next<0||next>max)?scroll+dy*.38:next;
+      drag.v=drag.v*.35+(dy/dt*1000)*.65;drag.y=point.y;drag.time=now;requestDraw();
+    }
+  });
+  function pointerEnd(event){
+    if(!pointers.has(event.pointerId))return;
+    pointers.delete(event.pointerId);
+    if(pinch){if(pointers.size<2){pinch=null;drag=null;settle();}}
+    else if(drag?.alt){settle();drag=null;}
+    else if(drag){
+      if(drag.moved){const stale=performance.now()-drag.time>100;fling={v:reducedMotion.matches||stale?0:clamp(drag.v,-3600,3600)};requestDraw();}
+      else{stopAnimation(true);const point=local(event);const hit=hitTest(point.x,point.y);if(hit){selection.index=hit.index;selection.time=performance.now();requestDraw();}}
+      drag=null;
+    }
+    if(!pointers.size)viewport.classList.remove('is-dragging');
+  }
+  viewport.addEventListener('pointerup',pointerEnd);viewport.addEventListener('pointercancel',pointerEnd);
+  viewport.addEventListener('dblclick',event=>{event.preventDefault();stopDemo();beginZoom(local(event),'double-click');animateTo(z>.01?Math.max(0,Math.round(z)-1):1,450);});
+  viewport.addEventListener('wheel',event=>{
+    if(!ready)return;event.preventDefault();stopDemo();interaction();
+    if(event.ctrlKey||event.metaKey){
+      if(!zoomSession||zoomSession.kind!=='wheel')beginZoom(local(event),'wheel');
+      applyZoom(z+clamp(event.deltaY,-120,120)*.006);
+      clearTimeout(wheelTimer);wheelTimer=setTimeout(settle,160);
+    }else{
+      if(zoomSession){clearTimeout(wheelTimer);settle();return;}
+      stopAnimation(true);panX=0;
+      const units=event.deltaMode===1?16:event.deltaMode===2?H:1;
+      scroll=clamp(scroll+event.deltaY*units,0,maxScroll());if(scroll===0&&Number.isInteger(z))pads[z]=0;requestDraw();
+    }
+  },{passive:false});
+  // Safari on macOS exposes its trackpad pinch through these events.
+  let safariGesture=null;
+  viewport.addEventListener('gesturestart',event=>{event.preventDefault();if(pinch)return;stopDemo();beginZoom(local(event),'safari');safariGesture={z,scale:event.scale||1};},{passive:false});
+  viewport.addEventListener('gesturechange',event=>{event.preventDefault();if(!safariGesture||pinch)return;applyZoom(safariGesture.z-Math.log2(event.scale/safariGesture.scale)*1.35);},{passive:false});
+  viewport.addEventListener('gestureend',event=>{event.preventDefault();if(safariGesture){safariGesture=null;settle();}},{passive:false});
+  function step(direction){if(!ready)return;stopDemo();beginZoom({x:W*.5,y:H*.44},'button');animateTo(Math.round(z)+direction);}
+  document.getElementById('zoom-out').addEventListener('click',()=>step(1));
+  document.getElementById('zoom-in').addEventListener('click',()=>step(-1));
+  range.addEventListener('pointerdown',()=>{if(!ready)return;stopDemo();beginZoom({x:W*.5,y:H*.44},'range');});
+  range.addEventListener('input',()=>{if(!ready)return;if(!zoomSession||zoomSession.kind!=='range'){stopDemo();beginZoom({x:W*.5,y:H*.44},'range');}applyZoom(4-Number(range.value));});
+  range.addEventListener('change',settle);range.addEventListener('pointerup',settle);range.addEventListener('pointercancel',settle);
+  range.addEventListener('keydown',event=>{
+    if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(event.key))return;
+    event.preventDefault();
+    if(event.key==='Home'||event.key==='End'){stopDemo();beginZoom({x:W*.5,y:H*.44},'button');animateTo(event.key==='Home'?4:0);}
+    else step(event.key==='ArrowRight'||event.key==='ArrowUp'?-1:1);
+  });
+  document.addEventListener('keydown',event=>{
+    if(!ready||event.target===range)return;
+    if(['+','=','-','_'].includes(event.key)){event.preventDefault();step(event.key==='-'||event.key==='_'?1:-1);}
+    else if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(event.key)){
+      event.preventDefault();stopDemo();stopAnimation(true);
+      if(event.key==='Home'){scroll=0;if(Number.isInteger(z))pads[z]=0;}else if(event.key==='End')scroll=maxScroll();
+      else scroll=clamp(scroll+(event.key==='ArrowDown'?88:event.key==='ArrowUp'?-88:event.key==='PageDown'?H*.85:-H*.85),0,maxScroll());
+      requestDraw();
+    }else if(event.key==='Escape'){stopDemo();clearTimeout(wheelTimer);if(zoomSession)settle();}
+  });
+  document.getElementById('demo').addEventListener('click',async()=>{
+    if(!ready)return;
+    if(demoPlaying){stopDemo();stopAnimation();if(zoomSession)settle();else{beginZoom({x:W*.5,y:H*.44},'button');await animateTo(Math.round(z));}return;}
+    stopAnimation();clearTimeout(wheelTimer);demoPlaying=true;const token=++demoToken;
+    document.getElementById('demo').classList.add('is-playing');document.getElementById('demo-text').textContent=tx.stop;interaction();
+    const focus=makeAnchor({x:W*.5,y:H*.44});
+    for(const target of [2,3,4,3,2,1,0,1]){
+      if(!demoPlaying||token!==demoToken)break;
+      // Retain the same photograph throughout the complete demonstration.
+      beginZoom({x:W*.5,y:H*.44},'demo');
+      anchor.index=focus.index;anchor.u=focus.u;anchor.v=focus.v;
+      anchor.point={x:W*.5,y:H*.44};
+      await animateTo(target,760);
+      if(!demoPlaying||token!==demoToken)break;
+      await new Promise(resolve=>setTimeout(resolve,reducedMotion.matches?350:400));
+    }
+    if(token===demoToken)stopDemo();
+  });
+  function resize(){
+    const r=viewport.getBoundingClientRect();if(!r.width||!r.height)return;
+    const point={x:W*.5,y:H*.44},keep=ready&&lastRects.length?makeAnchor(point):null;
+    W=r.width;H=r.height;dpr=Math.min(2,devicePixelRatio||1);
+    canvas.width=Math.round(W*dpr);canvas.height=Math.round(H*dpr);
+    if(keep){anchor=keep;anchor.point={x:W*.5,y:H*.44};const p=geometry(keep.index);scroll=clamp(p.y+keep.v*p.h-anchor.point.y,0,maxScroll());panX=0;}
+    requestDraw();
+  }
+  new ResizeObserver(resize).observe(viewport);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){stopDemo();clearTimeout(wheelTimer);if(zoomSession)finishZoom();}else requestDraw();});
+  async function init(){
+    images=await Promise.all(PHOTO_DATA.map(src=>new Promise(resolve=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>resolve(im);im.src=src;})));
+    photos=Array.from({length:COUNT},(_,i)=>{
+      const group=Math.floor(i/9),source=mod(group*7+(i%9)*3+Math.floor(group/5),images.length);
+      const im=images[source];return{source,ratio:clamp(im.naturalHeight/im.naturalWidth,.66,1.3),cropX:.3+mod(i*7,11)/25,cropY:.3+mod(i*3,9)/22};
+    });
+    for(let i=0;i<COUNT;i++)prefix.push(prefix[i]+photos[i].ratio);
+    ready=true;resize();scroll=layout(216,1).y;document.getElementById('loading').classList.add('is-ready');
+    requestDraw();
+  }
+  // Read-only diagnostics for checking the prototype, not an alternate input API.
+  window.photoGrid={get state(){
+    const p=anchor?geometry(anchor.index):null;
+    return {ready,z,columns:levels[Math.round(z)],scroll,maxScroll:maxScroll(),panX,width:W,height:H,photoCount:COUNT,sourceCount:images.length,moving:!!animation||!!zoomSession||!!fling,anchor:anchor?{index:anchor.index,x:p.x+panX+anchor.u*p.w,y:p.y-scroll+anchor.v*p.h,expectedX:anchor.point.x,expectedY:anchor.point.y}:null,drawMs:performanceFrames.length?performanceFrames.reduce((a,b)=>a+b,0)/performanceFrames.length:0,frames:frameCount,pads:[...pads]};
+  }};
+  init();
+})();
+</script>
+</body>
+</html>
