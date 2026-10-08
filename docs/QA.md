@@ -26,4 +26,16 @@ Local checks completed on 2026-10-08 with Windows Chrome/Chromium and Playwright
 
 Desktop, mobile, social-card and sampled film frames were visually inspected. Real iPhone Safari, real macOS trackpads, every edge gesture combination and production photo-library memory load remain unverified.
 
-Online checks are recorded after the first Pages deployment.
+## Online deployment checks
+
+GitHub Pages completed its first build on 2026-10-08. The published site at `https://one-num-three.github.io/photo-grid-lab/` returned HTTP 200.
+
+- Landing-page demo input started the actual iframe animation.
+- A clean session reached 5, 9, 13, 9, 5, 3 and 1 columns through the visible controls; each sampled final state was stable.
+- Language switching changed both the landing page and the standalone grid text.
+- The published web MP4 played through the native controls, advanced current time and decoded frames; metadata was 720 × 1560 and 21.16 seconds.
+- Published concept images loaded in the preview dialog.
+- Both README files, the social image, GIF and downloadable MP4 returned HTTP 200 with appropriate content types.
+- No page script errors were recorded during the live checks.
+
+The downloadable MP4 is 1080 × 2340; its 18,872,693-byte file was present at the published media URL. The web version is 10,608,978 bytes and the preview GIF is 3,074,874 bytes.
